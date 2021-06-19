@@ -22,16 +22,20 @@ const authCtrl = {
       const passwordHash = await bcrypt.hash(password, 12)
 
       const newUser = { name, account, password: passwordHash }
-
+      
       const active_token = generateActiveToken({newUser})
 
       const url = `${CLIENT_URL}/active/${active_token}`
 
       if(validateEmail(account)){
-        sendMail(account, url, "Verify your email address")
-        return res.json({ msg: "Success! Please check your email." })
-
-      }else if(validPhone(account)){
+        // sendMail(account, url, "Verify your email address")  
+        // return res.json({ msg: "Success! Please check your email." })
+        // -----------
+        const _user = new Users(newUser)
+        await _user.save()
+        return res.json({ msg: "Create account success!" })
+      }
+      else if(validPhone(account)){
         sendSms(account, url, "Verify your phone number")
         return res.json({ msg: "Success! Please check phone." })
       }
