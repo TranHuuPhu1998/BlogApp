@@ -6,8 +6,11 @@ import { generateActiveToken, generateAccessToken, generateRefreshToken } from '
 import sendMail from '../config/sendMail'
 import { validateEmail, validPhone } from '../middleware/vaild'
 import { sendSms } from '../config/sendSMS'
-import { IDecodedToken, IUser } from '../config/interface'
+import { IDecodedToken, IUser , IGgPayload ,IUserParams} from '../config/interface'
+import fetch from 'node-fetch'
+import { OAuth2Client } from 'google-auth-library'
 
+const client = new OAuth2Client(`${process.env.MAIL_CLIENT_ID}`)
 
 const CLIENT_URL = `${process.env.BASE_URL}`
 
@@ -54,9 +57,12 @@ const authCtrl = {
 
       if(!newUser) return res.status(400).json({msg: "Invalid authentication."})
       
-      const user = new Users(newUser)
+      const user = await Users.findOne({account: newUser.account})
+      if(user) return res.status(400).json({msg: "Account already exists."})
 
-      await user.save()
+      const new_user = new Users(newUser)
+
+      await new_user.save()
 
       res.json({msg: "Account has been activated!"})
 
@@ -109,9 +115,79 @@ const authCtrl = {
 
       const access_token = generateAccessToken({id: user._id})
 
-      res.json({access_token})
+      res.json({access_token , user })
       
     } catch (err) {
+      return res.status(500).json({msg: err.message})
+    }
+  },
+  googleLogin: async(req: Request, res: Response) => {
+    try {
+      const { id_token } = req.body
+      const verify = await client.verifyIdToken({
+        idToken: id_token, audience: `${process.env.MAIL_CLIENT_ID}`
+      })
+      
+      const {
+        email, email_verified, name, picture
+      } = <IGgPayload>verify.getPayload()
+
+      if(!email_verified)
+        return res.status(500).json({msg: "Email verification failed."})
+
+      const password = email + 'your google secrect password'
+      const passwordHash = await bcrypt.hash(password, 12)
+
+      const user = await Users.findOne({account: email})
+
+      if(user){
+        loginUser(user, password, res)
+      }else{
+        const user = {
+          name, 
+          account: email, 
+          password: passwordHash, 
+          avatar: picture,
+          type: 'login'
+        }
+        registerUser(user, res)
+      }
+      
+    } catch (err: any) {
+      return res.status(500).json({msg: err.message})
+    }
+  },
+  facebookLogin: async(req: Request, res: Response) => {
+    try {
+      const { accessToken, userID } = req.body
+
+      const URL = ` https://graph.facebook.com/v3.0/${userID}/?fields=id,name,email,picture&access_token=${accessToken} `
+
+      const data = await fetch(URL)
+      .then(res => res.json())
+      .then(res => { return res })
+
+      const { email, name, picture } = data
+
+      const password = email + 'your facebook secrect password'
+      const passwordHash = await bcrypt.hash(password, 12)
+
+      const user = await Users.findOne({account: email})
+
+      if(user){
+        loginUser(user, password, res)
+      }else{
+        const user = {
+          name, 
+          account: email, 
+          password: passwordHash, 
+          avatar: picture.data.url,
+          type: 'login'
+        }
+        registerUser(user, res)
+      } 
+      
+    } catch (err: any) {
       return res.status(500).json({msg: err.message})
     }
   },
@@ -139,5 +215,25 @@ const loginUser = async (user: IUser, password: string, res: Response) => {
 
 }
 
+const registerUser = async (user: IUserParams, res: Response) => {
+  const newUser = new Users(user)
+  await newUser.save()
+
+  const access_token = generateAccessToken({id: newUser._id})
+  const refresh_token = generateRefreshToken({id: newUser._id})
+
+  res.cookie('refreshtoken', refresh_token, {
+    httpOnly: true,
+    path: `/api/refresh_token`,
+    maxAge: 30*24*60*60*1000 // 30days
+  })
+
+  res.json({
+    msg: 'Login Success!',
+    access_token,
+    user: { ...newUser._doc, password: '' }
+  })
+
+}
 
 export default authCtrl;
