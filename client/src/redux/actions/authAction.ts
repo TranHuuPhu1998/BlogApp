@@ -17,8 +17,7 @@ async (dispatch: Dispatch<IAuthType | IAlertType>) => {
     dispatch({ type: ALERT, payload: { loading: true } })
     
     const res = await getAPI('refresh_token')
-    console.log("🚀 ~ file: authAction.ts ~ line 20 ~ res", res)
-    
+ 
     dispatch({ type: AUTH,payload: res.data })
 
     dispatch({ type: ALERT, payload: { } })

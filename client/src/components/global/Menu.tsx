@@ -6,7 +6,6 @@ import { logout } from '../../redux/actions/authAction'
 
 const Menu = () => {
   const { auth } = useSelector((state: RootStore) => state);
-  console.log("🚀 ~ file: Menu.tsx ~ line 30 ~ Menu ~ auth", auth)
 
   // const logged = localStorage.getItem('logged')
 
@@ -45,7 +44,7 @@ const Menu = () => {
         auth.user &&
         <li className="nav-item dropdown">
           <span className="nav-link dropdown-toggle" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <img width="30px" src={auth.user?.avatar} alt="avatar" className="avatar" />
+            <img src={auth.user?.avatar} alt="avatar" className="avatar" />
           </span>
 
           <ul className="dropdown-menu" aria-labelledby="navbarDropdown">

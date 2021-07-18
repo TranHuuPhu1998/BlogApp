@@ -128,9 +128,7 @@ const authCtrl = {
         idToken: id_token, audience: `${process.env.MAIL_CLIENT_ID}`
       })
       
-      const {
-        email, email_verified, name, picture
-      } = <IGgPayload>verify.getPayload()
+      const {email, email_verified, name, picture} = <IGgPayload>verify.getPayload()
 
       if(!email_verified)
         return res.status(500).json({msg: "Email verification failed."})
@@ -139,6 +137,7 @@ const authCtrl = {
       const passwordHash = await bcrypt.hash(password, 12)
 
       const user = await Users.findOne({account: email})
+      
 
       if(user){
         loginUser(user, password, res)
@@ -148,7 +147,7 @@ const authCtrl = {
           account: email, 
           password: passwordHash, 
           avatar: picture,
-          type: 'login'
+          type: 'google'
         }
         registerUser(user, res)
       }
@@ -182,7 +181,7 @@ const authCtrl = {
           account: email, 
           password: passwordHash, 
           avatar: picture.data.url,
-          type: 'login'
+          type: 'facebook'
         }
         registerUser(user, res)
       } 
@@ -193,10 +192,16 @@ const authCtrl = {
   },
 }
 
-
 const loginUser = async (user: IUser, password: string, res: Response) => {
   const isMatch = await bcrypt.compare(password, user.password)
-  if(!isMatch) return res.status(400).json({msg: "Password is incorrect."})
+  
+  if(!isMatch) {
+    let msgError = user.type === 'register'
+      ? 'Password is incorect'
+      : `Password is incorect . This account login with ${user.type}`
+
+    return res.status(400).json({msg:msgError })
+    }
 
   const access_token = generateAccessToken({id: user._id})
   const refresh_token = generateRefreshToken({id: user._id})

@@ -2,3 +2,5 @@ user: phutran
 pass: phu123456
 
 -FACEBOOK LOGIN #15
+-PROFILE USER_INFO(1) | #17
+-UPLOAD CLOUDINARY #18
