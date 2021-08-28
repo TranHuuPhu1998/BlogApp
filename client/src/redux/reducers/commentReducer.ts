@@ -1,13 +1,14 @@
 import {
     ICommentState,
     CREATE_COMMENT,
-    ICommentType
+    ICommentType,
+    GET_COMMENTS
 } from '../types/commentType';
 
 const initialState = {
     data :[],
     total: 1
-}
+};
 
 const commentReducer = (
     state: ICommentState = initialState,
@@ -18,7 +19,9 @@ const commentReducer = (
             return {
                 ...state,
                 data : [action.payload, ...state.data]
-            }
+            };
+        case GET_COMMENTS:
+            return action.payload;  
         default:
             return state;
     }

@@ -3,11 +3,13 @@ import { Dispatch } from 'redux'
 import { ALERT, IAlertType } from '../types/AlertType'
 import { 
   CREATE_COMMENT,
-  ICreateCommentType
+  GET_COMMENTS,
+  ICreateCommentType,
+  IGetCommentsType
 } from '../types/commentType'
 
 import { IComment } from '../../utils/TypeScript'
-import { postAPI } from '../../utils/FetchData'
+import { getAPI, postAPI } from '../../utils/FetchData'
 
 
 export const createComment = (
@@ -19,6 +21,25 @@ export const createComment = (
     dispatch({
       type: CREATE_COMMENT,
       payload: { ...res.data, user: data.user }
+    })
+    
+  } catch (err: any) {
+    dispatch({ type: ALERT, payload: { errors: err.response.data.msg } })
+  }
+}
+export const getComments = (
+  id:string
+) => async(dispatch: Dispatch<IAlertType | IGetCommentsType>) => {
+  try {
+    let limit = 8;
+    const res = await getAPI(`/comments/blog/${id}?limit=${limit}`)
+
+    dispatch({
+      type: GET_COMMENTS,
+      payload: {
+        data:res.data.comments ,
+        total: res.data.total
+      }
     })
     
   } catch (err: any) {
