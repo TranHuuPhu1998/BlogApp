@@ -49,7 +49,6 @@ const DisplayBlog: React.FC<IProps> = ({ blog }) => {
 
   useEffect(() => {
     if(!blog._id) return;
-
     fetchComments(blog._id);
   },[blog._id, fetchComments])
 
